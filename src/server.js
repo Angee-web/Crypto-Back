@@ -45,33 +45,13 @@ const authLimiter = rateLimit({
 });
 
 // CORS configuration
-const allowedOrigins = [
-  "http://localhost:5173",     // Vite local
-  "http://localhost:8080",     // your backend UI local
-  "https://crypto-mine-capital.vercel.app",
-  "https://cryptomine-capital.com"
-];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow non-browser requests like Postman
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        return callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-  })
-);
-
-// Ensure OPTIONS request returns CORS headers
-app.options("*", cors());
+app.use(cors({
+  origin: "https://crypto-mine-capital.vercel.app", 
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  // origin: process.env.FRONTEND_URL || 'http://localhost:8080',
+  credentials: true
+}));
 
 // Logging
 app.use(morgan('combined'));
