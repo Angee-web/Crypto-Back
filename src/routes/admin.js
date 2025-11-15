@@ -11,15 +11,18 @@ import {
   updateMiningPool,
   deleteMiningPool,
   createMiningPool,
-  removeMiningPoolFromUser
+  removeMiningPoolFromUser,
+  deletePerformanceAlertForUser,
+  performanceAlertValidation,
+  addPerformanceAlertForUser
 } from '../controllers/adminController.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // All admin routes require authentication and admin role
-// router.use(protect);
-// router.use(adminOnly);
+router.use(protect);
+router.use(adminOnly);
 
 // Admin dashboard stats
 router.get('/stats', getDashboardStats);
@@ -36,5 +39,7 @@ router.get('/mining-pools', getMiningPools);
 router.put('/mining-pools/:poolId', updateMiningPool);
 router.delete('/mining-pools/:poolId', deleteMiningPool);
 router.delete('/users/:userId/miningPools/:poolId', removeMiningPoolFromUser);
+router.post('/performance-alerts/:userId', performanceAlertValidation, addPerformanceAlertForUser);
+router.delete('/performance-alerts/:alertId', deletePerformanceAlertForUser);
 
 export default router;

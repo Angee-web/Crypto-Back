@@ -276,3 +276,73 @@ export const getNotifications = async (req, res) => {
     });
   }
 };
+
+
+// Get performance alerts
+export const getPerformanceAlerts = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate('dashboardData');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const alerts = user.dashboardData?.performanceAlerts || [];
+
+    res.status(200).json({
+      success: true,
+      data: alerts
+    });
+
+  } catch (error) {
+    console.error('Get performance alerts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching performance alerts'
+    });
+  }
+};
+
+// Mark performance alert as read
+export const markAlertAsRead = async (req, res) => {
+  try {
+    const { alertId } = req.params;
+
+    const user = await User.findById(req.user._id).populate('dashboardData');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const dashboardData = user.dashboardData;
+    const alert = dashboardData.performanceAlerts.id(alertId);
+
+    if (!alert) {
+      return res.status(404).json({
+        success: false,
+        message: 'Alert not found'
+      });
+    }
+
+    alert.read = true;
+    await dashboardData.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Alert marked as read'
+    });
+
+  } catch (error) {
+    console.error('Mark alert as read error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating alert status'
+    });
+  }
+};

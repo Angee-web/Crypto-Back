@@ -36,7 +36,16 @@ const dashboardDataSchema = new mongoose.Schema({
       hashRate: { type: Number, default: 0 },
       efficiency: { type: Number, default: 0 }
     }
-  ]  
+  ],
+  performanceAlerts: [
+    {
+      performanceAlertId: { type: mongoose.Schema.Types.ObjectId, ref: 'PerformanceAlert', default: () => new mongoose.Types.ObjectId() },
+      message: String,
+      severity: { type: String, enum: ['info', 'warning', 'critical'], default: 'info' },
+      date: { type: Date, default: Date.now },
+      read: { type: Boolean, default: false }
+    }
+  ]
 }, { timestamps: true });
 
 // Add this after defining the schema

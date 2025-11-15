@@ -273,7 +273,7 @@ export const getUserDashboard = async (req, res) => {
 export const updateUserDashboard = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { metrics, availableBalance, miningPools, recentTransactions } = req.body;
+    const { metrics, availableBalance, miningPools, recentTransactions, performanceAlerts } = req.body;
 
     const dashboard = await DashboardData.findOne({ userId });
     if (!dashboard) return res.status(404).json({ success: false, message: 'Dashboard not found' });
@@ -311,6 +311,17 @@ export const updateUserDashboard = async (req, res) => {
       }));
     }
 
+    // update performance alerts
+    if (performanceAlerts && Array.isArray(performanceAlerts)) {
+      dashboard.performanceAlerts = performanceAlerts.map(alert => ({
+        performanceAlertId: alert.performanceAlertId,
+        message: alert.message,
+        severity: alert.severity || 'info',
+        date: alert.date ? new Date(alert.date) : new Date(),
+        read: alert.read || false
+      }));
+    }
+
     await dashboard.save();
 
     res.status(200).json({
@@ -323,8 +334,6 @@ export const updateUserDashboard = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error updating dashboard' });
   }
 };
-
-
 
 
 // Get dashboard statistics (admin only)
@@ -367,6 +376,72 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
+// Performance alert management
+
+export const addPerformanceAlertForUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { message, severity } = req.body;
+
+    const dashboard = await DashboardData.findOne({ userId });
+    console.log('Found dashboard:', dashboard);
+    console.log('dashboard for userId:', userId);
+    if (!dashboard) {
+      return res.status(404).json({ success: false, message: 'Dashboard not found for this user' });
+    }
+
+    const newAlert = {
+      performanceAlertId: undefined,
+      message,
+      severity: severity || 'info',
+      date: new Date(),
+      read: false
+    };
+
+    dashboard.performanceAlerts.push(newAlert);
+    await dashboard.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Performance alert added successfully',
+      data: newAlert
+    });
+  } catch (error) {
+    console.error('Add performance alert error:', error);
+    res.status(500).json({ success: false, message: 'Server error adding performance alert' });
+  }
+};
+
+export const deletePerformanceAlertForUser = async (req, res) => {
+  try {
+    const { userId, alertId } = req.params;
+
+    const dashboard = await DashboardData.findOne({ userId });
+    if (!dashboard) {
+      return res.status(404).json({ success: false, message: 'Dashboard not found for this user' });
+    }
+
+    const initialLength = dashboard.performanceAlerts.length;
+    dashboard.performanceAlerts = dashboard.performanceAlerts.filter(
+      alert => alert.performanceAlertId?.toString() !== alertId
+    );
+
+    if (dashboard.performanceAlerts.length === initialLength) {
+      return res.status(404).json({ success: false, message: 'Performance alert not found' });
+    }
+
+    await dashboard.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Performance alert deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete performance alert error:', error);
+    res.status(500).json({ success: false, message: 'Server error deleting performance alert' });
+  }
+};
+
 /* -------------------- DASHBOARD DATA VALIDATION -------------------- */
 
 export const updateDashboardValidation = [
@@ -382,9 +457,6 @@ export const updateDashboardValidation = [
   body('miningPools').optional().isArray().withMessage('Mining pools must be an array of IDs'),
   body('miningPools.*').optional().isMongoId().withMessage('Each mining pool must be a valid ID')
 ];
-
-
-
 
 export const miningPoolValidation = [
   body('miningPools').isArray().withMessage('Mining pools must be an array'),
@@ -405,11 +477,6 @@ export const miningPoolValidation = [
   body('miningPools.*.efficiency').isNumeric().withMessage('Efficiency must be a number'),
 ];
 
-
-
-// Validation rules for dashboard updates
-
-
 // Validation rules for user info updates
 export const updateUserInfoValidation = [
   body('firstName').optional().trim().isLength({ min: 2, max: 50 }).withMessage('First name must be between 2 and 50 characters'),
@@ -417,4 +484,10 @@ export const updateUserInfoValidation = [
   body('email').optional().trim().isEmail().withMessage('Please provide a valid email').normalizeEmail(),
   body('plan').optional().isIn(['Basic', 'Professional', 'Enterprise']).withMessage('Invalid plan type'),
   body('isActive').optional().isBoolean().withMessage('isActive must be a boolean value')
+];
+
+// Validation for performance alerts
+export const performanceAlertValidation = [
+  body('message').notEmpty().withMessage('Alert message is required'),
+  body('severity').optional().isIn(['info', 'warning', 'critical']).withMessage('Severity must be info, warning, or critical')
 ];

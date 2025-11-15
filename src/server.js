@@ -46,10 +46,12 @@ const authLimiter = rateLimit({
 
 // CORS configuration
 app.use(cors({
-  origin: "https://crypto-mine-capital.vercel.app", 
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  origin: [
+    "http://localhost:8080",
+    "https://crypto-mine-capital.vercel.app"
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  // origin: process.env.FRONTEND_URL || 'http://localhost:8080',
   credentials: true
 }));
 

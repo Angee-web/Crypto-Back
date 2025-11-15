@@ -4,7 +4,9 @@ import {
   getPortfolioPerformance,
   getMiningOperations,
   getNotifications,
-  updateUserProfile
+  updateUserProfile,
+  getPerformanceAlerts,
+  markAlertAsRead
 } from '../controllers/dashboardController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -19,5 +21,7 @@ router.get('/portfolio-performance', getPortfolioPerformance);
 router.get('/mining-operations', getMiningOperations);
 router.get('/notifications', getNotifications);
 router.put("/edit-profile", updateUserProfile);
+router.get('/performance-alerts', getPerformanceAlerts); 
+router.patch('/performance-alerts/:alertId/mark-read', markAlertAsRead);
 
 export default router;
