@@ -298,7 +298,6 @@ export const updateUserDashboard = async (req, res) => {
     }
 
     // ✅ Update recentTransactions safely
-    // these controllers
     if (recentTransactions && Array.isArray(recentTransactions)) {
       dashboard.recentTransactions = recentTransactions.map(tx => ({
         date: tx.date ? new Date(tx.date) : new Date(),
