@@ -134,7 +134,6 @@ export const createMiningPool = async (req, res) => {
 };
 
 // Get all mining pools
-// Get all mining pools
 export const getMiningPools = async (req, res) => {
   try {
     const pools = await MiningPool.find().sort({ createdAt: -1 });
