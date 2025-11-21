@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import crypto from "crypto";
 import User from '../models/User.js';
 import DashboardData from '../models/DashboardData.js';
+import { sendPasswordResetConfirmationEmail } from './emailController.js';
 
 // Helper function to dynamically import User model only when needed
 const getUserModel = async () => {
@@ -340,10 +341,10 @@ const sendOTPEmail = async (email, otp) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    console.log("Forgot password email lookup:", email);
-const user = await User.findOne({ email: new RegExp(`^${email.trim()}$`, 'i') });
-console.log("Found user:", user);
 
+    const user = await User.findOne({
+      email: new RegExp(`^${email.trim()}$`, 'i'),
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -353,21 +354,25 @@ console.log("Found user:", user);
     }
 
     const otp = generateOTP();
+
     user.resetPasswordOTP = otp;
-    user.resetPasswordOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.resetPasswordOTPExpire = Date.now() + 10 * 60 * 1000;
     await user.save({ validateBeforeSave: false });
 
-    await sendOTPEmail(email, otp);
+    // remove this → await sendOTPEmail(email, otp);
+    // because the frontend will send the email using your /send-email endpoint
 
     res.status(200).json({
       success: true,
-      message: 'OTP sent successfully. Check your email or console log.',
+      otp,                                // 👈 FIX HERE
+      message: 'OTP generated successfully.',
     });
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
 
 export const resetPassword = async (req, res) => {
   try {
@@ -397,12 +402,14 @@ export const resetPassword = async (req, res) => {
     user.password = password;
     user.resetPasswordOTP = undefined;
     user.resetPasswordOTPExpire = undefined;
-
     await user.save();
+
+    // 🔥 Send confirmation email
+    await sendPasswordResetConfirmationEmail(email);
 
     res.status(200).json({
       success: true,
-      message: 'Password reset successful. You can now log in.',
+      message: 'Password reset successful. A confirmation email has been sent.',
     });
   } catch (error) {
     console.error('Reset password error:', error);

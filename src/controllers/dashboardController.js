@@ -1,3 +1,5 @@
+import DashboardData from '../models/DashboardData.js';
+import Investments from '../models/Investments.js';
 import User from '../models/User.js';
 
 // Get user dashboard overview data
@@ -344,5 +346,167 @@ export const markAlertAsRead = async (req, res) => {
       success: false,
       message: 'Server error updating alert status'
     });
+  }
+};
+
+
+/**
+ * @desc Create a new investment for the authenticated user
+ * @route POST /api/investments
+ * @access Private
+ */
+export const createInvestment = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const {
+      goal,
+      planId,
+      riskTolerance,
+      amount,
+      paymentMethod,
+      transactionReference,
+    } = req.body;
+
+    // Validate required fields
+    if (!goal || !planId || !riskTolerance || !amount || !paymentMethod) {
+      return res.status(400).json({ success: false, message: "All required fields must be provided" });
+    }
+
+    // Create investment
+    const newInvestment = new Investments({
+      userId,
+      goals: goal,
+      plan: planId,
+      riskTolerance,
+      initialInvestment: amount,
+      paymentMethod,
+      transactionReference,
+    });
+
+    const savedInvestment = await newInvestment.save();
+
+    // Add investment to user's dashboard data
+    const dashboard = await DashboardData.findOne({ userId });
+    if (dashboard) {
+      dashboard.investments.push(savedInvestment);
+      dashboard.totalInvested = dashboard.investments.reduce((sum, inv) => sum + inv.amount, 0);
+      await dashboard.save();
+    }
+
+    res.status(201).json({ success: true, data: savedInvestment });
+  } catch (error) {
+    console.error("Create investment error:", error);
+    res.status(500).json({ success: false, message: "Server error creating investment" });
+  }
+};
+
+
+/**
+ * @desc Get all investments (admin) or user-specific investments
+ * @route GET /api/investments
+ * @access Private
+ */
+export const getInvestments = async (req, res) => {
+  try {
+    let investments;
+    if (req.user.role === "admin") {
+      investments = await Investments.find().populate("userId", "firstName lastName email");
+    } else {
+      investments = await Investments.find({ userId: req.user._id });
+    }
+
+    res.status(200).json({ success: true, data: investments });
+  } catch (error) {
+    console.error("Get investments error:", error);
+    res.status(500).json({ success: false, message: "Server error fetching investments" });
+  }
+};
+
+/**
+ * @desc Get a single investment by ID
+ * @route GET /api/investments/:id
+ * @access Private
+ */
+export const getInvestmentById = async (req, res) => {
+  try {
+    const investment = await Investments.findById(req.params.id).populate("userId", "firstName lastName email");
+
+    if (!investment) {
+      return res.status(404).json({ success: false, message: "Investment not found" });
+    }
+
+    // Check ownership
+    if (req.user.role !== "admin" && investment.userId._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    res.status(200).json({ success: true, data: investment });
+  } catch (error) {
+    console.error("Get investment by ID error:", error);
+    res.status(500).json({ success: false, message: "Server error fetching investment" });
+  }
+};
+
+/**
+ * @desc Update an investment
+ * @route PUT /api/investments/:id
+ * @access Private
+ */
+export const updateInvestment = async (req, res) => {
+  try {
+    const investment = await Investments.findById(req.params.id);
+
+    if (!investment) {
+      return res.status(404).json({ success: false, message: "Investment not found" });
+    }
+
+    // Check ownership
+    if (req.user.role !== "admin" && investment.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { goals, plan, riskTolerance, initialInvestment, paymentMethod, transactionReference, status } = req.body;
+
+    if (goals) investment.goals = goals;
+    if (plan) investment.plan = plan;
+    if (riskTolerance) investment.riskTolerance = riskTolerance;
+    if (initialInvestment) investment.initialInvestment = initialInvestment;
+    if (paymentMethod) investment.paymentMethod = paymentMethod;
+    if (transactionReference) investment.transactionReference = transactionReference;
+    if (status && req.user.role === "admin") investment.status = status; // Only admin can change status
+
+    const updatedInvestment = await investment.save();
+
+    res.status(200).json({ success: true, data: updatedInvestment });
+  } catch (error) {
+    console.error("Update investment error:", error);
+    res.status(500).json({ success: false, message: "Server error updating investment" });
+  }
+};
+
+/**
+ * @desc Delete an investment
+ * @route DELETE /api/investments/:id
+ * @access Private
+ */
+export const deleteInvestment = async (req, res) => {
+  try {
+    const investment = await Investments.findById(req.params.id);
+
+    if (!investment) {
+      return res.status(404).json({ success: false, message: "Investment not found" });
+    }
+
+    // Only admin or owner can delete
+    if (req.user.role !== "admin" && investment.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    await investment.remove();
+
+    res.status(200).json({ success: true, message: "Investment deleted successfully" });
+  } catch (error) {
+    console.error("Delete investment error:", error);
+    res.status(500).json({ success: false, message: "Server error deleting investment" });
   }
 };

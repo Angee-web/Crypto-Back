@@ -45,6 +45,19 @@ const dashboardDataSchema = new mongoose.Schema({
       date: { type: Date, default: Date.now },
       read: { type: Boolean, default: false }
     }
+  ],
+  investments: [
+    {
+      investmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Investment', default: () => new mongoose.Types.ObjectId() },
+      goals: String,
+      plan: String,
+      riskTolerance: String,
+      initialInvestment: Number,
+      paymentMethod: String,
+      transactionReference: String,
+      status: { type: String, enum: ["pending", "active", "rejected"], default: "pending" },
+      createdAt: { type: Date, default: Date.now }
+    }
   ]
 }, { timestamps: true });
 

@@ -6,7 +6,12 @@ import {
   getNotifications,
   updateUserProfile,
   getPerformanceAlerts,
-  markAlertAsRead
+  markAlertAsRead,
+  createInvestment,
+  getInvestments,
+  getInvestmentById,
+  updateInvestment,
+  deleteInvestment
 } from '../controllers/dashboardController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -23,5 +28,14 @@ router.get('/notifications', getNotifications);
 router.put("/edit-profile", updateUserProfile);
 router.get('/performance-alerts', getPerformanceAlerts); 
 router.patch('/performance-alerts/:alertId/mark-read', markAlertAsRead);
+
+router.route("/investments")
+  .post(createInvestment)
+  .get(getInvestments);
+
+router.route("/investments/:id")
+  .get(getInvestmentById)
+  .put(updateInvestment)
+  .delete(deleteInvestment);
 
 export default router;

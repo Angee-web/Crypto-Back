@@ -321,6 +321,19 @@ export const updateUserDashboard = async (req, res) => {
       }));
     }
 
+    // update investment section
+    if (investments && Array.isArray(investments)) {
+      dashboard.investments = investments.map(investment => ({
+        goals: investment.goals,
+        plan: investment.plan,
+        riskTolerance: investment.riskTolerance,
+        initialInvestment: investment.initialInvestment,
+        paymentMethod: investment.paymentMethod,
+        transactionReference: investment.transactionReference,
+        status: investment.status,
+      }));
+    }    
+
     await dashboard.save();
 
     res.status(200).json({
