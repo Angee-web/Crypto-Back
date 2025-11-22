@@ -3,12 +3,12 @@ import { body, validationResult } from "express-validator";
 
 // Outlook SMTP transporter
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // TLS requires secureConnection = false
+  host: process.env.BREVO_HOST,
+  port: process.env.BREVO_PORT,
+  secure: false,
   auth: {
-    user: process.env.GMAIL_EMAIL,   // e.g. your outlook email
-    pass: process.env.GMAIL_PASSWORD // your outlook password / app password
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_PASSWORD
   }
 });
 
