@@ -46,12 +46,9 @@ export const sendEmail = [
         message: "Email sent successfully"
       });
 
-    } catch (error) {
-      console.error("Email sending error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to send email"
-      });
+    } catch (err) {
+      console.error("Nodemailer error:", err);
+      res.status(500).json({ success: false, message: "Failed to send email", error: err.message });
     }
   }
 ];
