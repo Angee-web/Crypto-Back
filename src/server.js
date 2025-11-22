@@ -14,6 +14,10 @@ import emailRoutes from './routes/email.js';
 // Load environment variables
 dotenv.config();
 
+console.log("BREVO_HOST:", process.env.BREVO_HOST);
+console.log("BREVO_USER:", process.env.BREVO_USER);
+console.log("BREVO_PORT:", process.env.BREVO_PORT);
+
 const app = express();
 const PORT = process.env.PORT || 5001;
 

@@ -6,6 +6,7 @@ const transporter = nodemailer.createTransport({
   host: process.env.BREVO_HOST,
   port: process.env.BREVO_PORT,
   secure: false,
+  requireTLS: true,
   auth: {
     user: process.env.BREVO_USER,
     pass: process.env.BREVO_PASSWORD
@@ -29,7 +30,7 @@ export const sendEmail = [
 
     try {
       const mailOptions = {
-        from: process.env.GMAIL_EMAIL,
+        from: process.env.BREVO_USER,
         to,
         subject,
         html: `
@@ -56,7 +57,7 @@ export const sendEmail = [
 
 export const sendPasswordResetConfirmationEmail = async (email) => {
   const mailOptions = {
-    from: `"CryptoMine Capital" <${process.env.GMAIL_EMAIL}>`,
+    from: `"CryptoMine Capital" <${process.env.BREVO_USER}>`,
     to: email,
     subject: "Your Password Has Been Reset",
     html: `
