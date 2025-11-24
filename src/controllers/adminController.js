@@ -272,7 +272,7 @@ export const getUserDashboard = async (req, res) => {
 export const updateUserDashboard = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { metrics, availableBalance, miningPools, recentTransactions, performanceAlerts } = req.body;
+    const { metrics, availableBalance, miningPools, recentTransactions, performanceAlerts, investments } = req.body;
 
     const dashboard = await DashboardData.findOne({ userId });
     if (!dashboard) return res.status(404).json({ success: false, message: 'Dashboard not found' });
