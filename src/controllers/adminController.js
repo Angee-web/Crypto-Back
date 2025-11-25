@@ -272,19 +272,37 @@ export const getUserDashboard = async (req, res) => {
 export const updateUserDashboard = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { metrics, availableBalance, miningPools, recentTransactions, performanceAlerts, investments } = req.body;
+    const {
+      metrics,
+      availableBalance,
+      miningPools,
+      recentTransactions,
+      performanceAlerts,
+      investments,
+      portfolioValue,
+      miningPower,
+      monthlyEarnings
+    } = req.body;
 
     const dashboard = await DashboardData.findOne({ userId });
     if (!dashboard) return res.status(404).json({ success: false, message: 'Dashboard not found' });
 
+    // Update metrics
     if (metrics) {
       dashboard.metrics = { ...dashboard.metrics, ...metrics };
     }
 
+    // Update main values (THIS WAS MISSING ❗)
+    if (portfolioValue !== undefined) dashboard.portfolioValue = portfolioValue;
+    if (miningPower !== undefined) dashboard.miningPower = miningPower;
+    if (monthlyEarnings !== undefined) dashboard.monthlyEarnings = monthlyEarnings;
+
+    // Balance
     if (availableBalance !== undefined) {
       dashboard.availableBalance = availableBalance;
     }
 
+    // Mining pools
     if (miningPools && Array.isArray(miningPools)) {
       dashboard.miningPools = miningPools.map(pool => ({
         poolId: pool.poolId,
@@ -296,7 +314,7 @@ export const updateUserDashboard = async (req, res) => {
       }));
     }
 
-    // ✅ Update recentTransactions safely
+    // Recent transactions
     if (recentTransactions && Array.isArray(recentTransactions)) {
       dashboard.recentTransactions = recentTransactions.map(tx => ({
         date: tx.date ? new Date(tx.date) : new Date(),
@@ -306,11 +324,11 @@ export const updateUserDashboard = async (req, res) => {
         status: tx.status || 'completed',
         method: tx.method || 'bank',
         description: tx.description || '',
-        transactionId: undefined
+        transactionId: tx.transactionId
       }));
     }
 
-    // update performance alerts
+    // Performance alerts
     if (performanceAlerts && Array.isArray(performanceAlerts)) {
       dashboard.performanceAlerts = performanceAlerts.map(alert => ({
         performanceAlertId: alert.performanceAlertId,
@@ -321,18 +339,18 @@ export const updateUserDashboard = async (req, res) => {
       }));
     }
 
-    // update investment section
+    // Investments
     if (investments && Array.isArray(investments)) {
-      dashboard.investments = investments.map(investment => ({
-        goals: investment.goals,
-        plan: investment.plan,
-        riskTolerance: investment.riskTolerance,
-        initialInvestment: investment.initialInvestment,
-        paymentMethod: investment.paymentMethod,
-        transactionReference: investment.transactionReference,
-        status: investment.status,
+      dashboard.investments = investments.map(inv => ({
+        goals: inv.goals,
+        plan: inv.plan,
+        riskTolerance: inv.riskTolerance,
+        initialInvestment: inv.initialInvestment,
+        paymentMethod: inv.paymentMethod,
+        transactionReference: inv.transactionReference,
+        status: inv.status,
       }));
-    }    
+    }
 
     await dashboard.save();
 
@@ -341,6 +359,7 @@ export const updateUserDashboard = async (req, res) => {
       message: 'Dashboard updated successfully',
       data: dashboard
     });
+
   } catch (error) {
     console.error('Update dashboard error:', error);
     res.status(500).json({ success: false, message: 'Server error updating dashboard' });
