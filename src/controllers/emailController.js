@@ -3,13 +3,15 @@ import { body, validationResult } from "express-validator";
 
 // Outlook SMTP transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.BREVO_HOST,
-  port: process.env.BREVO_PORT,
+  // host: process.env.BREVO_HOST,
+  host: "smtp.gmail.com",
+  // port: process.env.BREVO_PORT,
+  port: 587,
   secure: false,
-  requireTLS: true,
+  // requireTLS: true,
   auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASSWORD
+    user: process.env.GMAIL_EMAIL,
+    pass: process.env.GMAIL_PASSWORD
   }
 });
 
@@ -30,7 +32,7 @@ export const sendEmail = [
 
     try {
       const mailOptions = {
-        from: process.env.BREVO_USER,
+        from: process.env.GMAIL_EMAIL,
         to,
         subject,
         html: `
@@ -57,7 +59,7 @@ export const sendEmail = [
 
 export const sendPasswordResetConfirmationEmail = async (email) => {
   const mailOptions = {
-    from: `"CryptoMine Capital" <${process.env.BREVO_USER}>`,
+    from: `"CryptoMine Capital" <${process.env.GMAIL_EMAIL}>`,
     to: email,
     subject: "Your Password Has Been Reset",
     html: `
