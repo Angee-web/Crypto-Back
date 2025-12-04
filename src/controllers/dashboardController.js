@@ -121,84 +121,157 @@ export const updateUserProfile = async (req, res) => {
 
 
 // Get detailed portfolio performance data
+// ===============================
+// Portfolio Performance Controller
+// ===============================
+
+
 export const getPortfolioPerformance = async (req, res) => {
   try {
-    const { period = '30D' } = req.query;
+    const { period = "30D" } = req.query;
 
-    // Fetch user and populate dashboardData
-    const user = await User.findById(req.user._id).populate('dashboardData');
+    // 1️⃣ FETCH USER + DASHBOARD DAT
+    const user = await User.findById(req.user._id).populate("dashboardData");
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
-    const baseValue = parseFloat(user.investmentProfile?.initialInvestment) || 0;
     const dashboard = user.dashboardData;
 
-    // Determine number of data points
-    let dataPoints;
-    switch (period) {
-      case '30D':
-        dataPoints = 30;
-        break;
-      case '90D':
-        dataPoints = 90;
-        break;
-      case '1Y':
-        dataPoints = 365;
-        break;
-      default:
-        dataPoints = 30;
-    }    
+    // 2️⃣ GET FIRST INVESTMENT DATE (REAL START DATE)
+    const firstInvestment = dashboard?.investments?.[0];
+    const firstInvestmentDate = firstInvestment
+      ? new Date(firstInvestment.createdAt)
+      : null;
 
-    // Generate performance data
-    const generateDetailedChart = () => {
+    if (!firstInvestment) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          period,
+          data: [],
+          summary: {
+            totalReturn: "0%",
+            volatility: "0%",
+            sharpeRatio: "0.00",
+            maxDrawdown: "0%",
+          },
+        },
+      });
+    }
+
+    const baseValue = Number(firstInvestment.initialInvestment);
+
+    // 3️⃣ PERIOD → DATA POINTS
+    const PERIOD_MAP = {
+      "30D": 30,
+      "90D": 90,
+      "1Y": 365,
+    };
+
+    const dataPoints = PERIOD_MAP[period] || 30;
+
+    // 4️⃣ MINING HASHRATE (sum pools)
+    const totalHashRate =
+      dashboard?.miningPools?.reduce(
+        (sum, pool) => sum + Number(pool.hashRate || 0),
+        0
+      ) || 0;
+
+    // 5️⃣ GROWTH ENGINE (REALISTIC)
+    const generatePerformanceHistory = () => {
+      const today = new Date();
       const data = [];
-      for (let i = 0; i < dataPoints; i++) {
-        const growthRate = 0.002; // daily growth
-        const volatility = (Math.random() - 0.5) * 0.02; // random fluctuation
-        const value = baseValue * Math.pow(1 + growthRate + volatility, i);
 
-        // Sum hashRate across all mining pools
-        const hashRate = dashboard?.miningPools?.reduce((sum, pool) => sum + (pool.hashRate || 0), 0) || 0;
+      for (let i = dataPoints - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+
+        // If date is BEFORE first investment → no growth
+        if (date < firstInvestmentDate) {
+          data.push({
+            date,
+            value: null,
+            earnings: null,
+            hashRate: totalHashRate,
+          });
+          continue;
+        }
+
+        // --- Growth model ---
+        // Baseline daily growth: 0.15% (moderate investment rate)
+        const dailyGrowth = 0.0015;
+
+        // Volatility: ±0.3%
+        const volatility = (Math.random() - 0.5) * 0.006;
+
+        // Days since investment started
+        const daysActive = Math.floor(
+          (date - firstInvestmentDate) / (24 * 60 * 60 * 1000)
+        );
+
+        // Portfolio value with compounded growth
+        const growthFactor = Math.pow(
+          1 + dailyGrowth + volatility,
+          daysActive
+        );
+
+        const portfolioValue = Math.round(baseValue * growthFactor);
+
+        // Mining earnings model
+        const dailyMiningEarnings = totalHashRate * 0.12; // e.g., 6.7 TH/s → $0.80/day
+        const monthlyMiningEarnings = dailyMiningEarnings * 30;
 
         data.push({
-          date: new Date(Date.now() - (dataPoints - i) * 24 * 60 * 60 * 1000),
-          value: Math.round(value),
-          earnings: Math.round(value * 0.001), // example earnings
-          hashRate: Math.round(hashRate * 10) / 10
+          date,
+          value: portfolioValue,
+          earnings: Math.round(dailyMiningEarnings),
+          hashRate: totalHashRate,
         });
       }
+
       return data;
     };
 
-    const performanceData = {
-      period,
-      data: generateDetailedChart(),
-      summary: {
-        totalReturn: `+${((Math.random() * 20) + 10).toFixed(1)}%`,
-        volatility: `${(Math.random() * 5 + 2).toFixed(1)}%`,
-        sharpeRatio: (Math.random() * 2 + 1).toFixed(2),
-        maxDrawdown: `-${(Math.random() * 8 + 2).toFixed(1)}%`
-      }
+    const chartData = generatePerformanceHistory();
+
+    // 6️⃣ SUMMARY METRICS
+    const validData = chartData.filter((d) => d.value !== null);
+    const startValue = validData[0]?.value || baseValue;
+    const endValue = validData.at(-1)?.value || startValue;
+
+    const totalReturn = ((endValue - startValue) / startValue) * 100;
+
+    const summary = {
+      totalReturn: `${totalReturn.toFixed(1)}%`,
+      volatility: `${(Math.random() * 4 + 1).toFixed(1)}%`,
+      sharpeRatio: (Math.random() * 1 + 0.8).toFixed(2),
+      maxDrawdown: `-${(Math.random() * 7 + 1).toFixed(1)}%`,
     };
 
-    res.status(200).json({
+    // 7️⃣ FINAL RESPONSE
+    return res.status(200).json({
       success: true,
-      data: performanceData
+      data: {
+        period,
+        data: chartData,
+        summary,
+      },
     });
-
   } catch (error) {
-    console.error('Get portfolio performance error:', error);
+    console.error("Get portfolio performance error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error fetching performance data'
+      message: "Server error fetching performance data",
     });
   }
 };
+
+
 
 
 // Get mining operations detailed status

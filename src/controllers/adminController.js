@@ -490,7 +490,9 @@ export const updateDashboardValidation = [
 ];
 
 export const miningPoolValidation = [
-  body('miningPools').isArray().withMessage('Mining pools must be an array'),
+  body('miningPools')
+  .optional()
+  .isArray().withMessage('Mining pools must be an array'),
 
   // Only validate poolId as a Mongo ID
   body('miningPools.*.poolId')
