@@ -2,18 +2,7 @@ import nodemailer from 'nodemailer';
 import { body, validationResult } from "express-validator";
 
 // Outlook SMTP transporter
-const transporter = nodemailer.createTransport({
-  // host: process.env.BREVO_HOST,
-  host: "",
-  // port: process.env.BREVO_PORT,
-  port: 587,
-  secure: false,
-  // requireTLS: true,
-  auth: {
-    user: process.env.GMAIL_EMAIL,
-    pass: process.env.GMAIL_PASSWORD
-  }
-});
+
 
 // Send email controller
 export const sendEmail = [
