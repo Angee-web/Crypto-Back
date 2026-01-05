@@ -4,7 +4,7 @@ import { body, validationResult } from "express-validator";
 // Outlook SMTP transporter
 const transporter = nodemailer.createTransport({
   // host: process.env.BREVO_HOST,
-  host: "smtp.gmail.com",
+  host: "",
   // port: process.env.BREVO_PORT,
   port: 587,
   secure: false,
